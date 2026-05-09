@@ -1,0 +1,43 @@
+{
+  "name": "weather-mcp",
+  "version": "1.0.0",
+  "description": "天气预报 Model Context Protocol 服务器",
+  "main": "src/index.ts",
+  "bin": {
+    "weather-mcp": "src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "tsx --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "weather",
+    "mcp",
+    "typescript"
+  ],
+  "author": "zhoukailian",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "await-to-js": "^3.0.0",
+    "axios": "^1.8.4",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "fs-extra": "^11.2.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "@types/express": "^4.17.21",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.17.30",
+    "nodemon": "^3.0.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

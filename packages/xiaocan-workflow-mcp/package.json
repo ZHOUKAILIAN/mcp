@@ -1,0 +1,39 @@
+{
+  "name": "xiaocan-workflow-mcp",
+  "version": "1.0.0",
+  "description": "小蚕霸王餐手动流程辅助 MCP",
+  "main": "src/index.ts",
+  "bin": {
+    "xiaocan-workflow-mcp": "src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "tsx --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "xiaocan",
+    "workflow",
+    "mcp",
+    "typescript"
+  ],
+  "author": "zhoukailian",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "fs-extra": "^11.2.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.17.30",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
