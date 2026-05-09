@@ -7,6 +7,18 @@ import type { AuthData } from "./api-types.js";
 const AUTH_DIR = resolve(homedir(), ".xiaocan-mcp");
 const AUTH_FILE = resolve(AUTH_DIR, "auth.json");
 
+function fromEnv(): Partial<AuthData> {
+  const token = process.env.XIAOCAN_TOKEN?.trim();
+  const userId = parseInt(process.env.XIAOCAN_USER_ID || "0", 10);
+  const silkId = parseInt(process.env.XIAOCAN_SILK_ID || "0", 10);
+  const cityCode = parseInt(process.env.XIAOCAN_CITY_CODE || "310100", 10);
+
+  if (token && userId && silkId) {
+    return { token, userId, silkId, cityCode, updatedAt: new Date().toISOString() };
+  }
+  return {};
+}
+
 export class AuthStore {
   private cache: AuthData | null = null;
   private loaded = false;
@@ -14,6 +26,16 @@ export class AuthStore {
   async load(): Promise<AuthData | null> {
     if (this.loaded) return this.cache;
 
+    // 1. env vars take priority
+    const env = fromEnv();
+    if (env.token) {
+      this.cache = env as AuthData;
+      setAuth(this.cache);
+      this.loaded = true;
+      return this.cache;
+    }
+
+    // 2. fallback to auth.json
     try {
       if (await fs.pathExists(AUTH_FILE)) {
         this.cache = await fs.readJson(AUTH_FILE);
@@ -37,9 +59,7 @@ export class AuthStore {
   async clear(): Promise<void> {
     this.cache = null;
     this.loaded = true;
-    try {
-      await fs.remove(AUTH_FILE);
-    } catch { /* ignore */ }
+    try { await fs.remove(AUTH_FILE); } catch { /* ignore */ }
   }
 
   async isLoggedIn(): Promise<boolean> {
