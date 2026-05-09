@@ -18,6 +18,7 @@ import {
   getPromotionDetail,
   grabOrder,
   getPromotionOrders,
+  submitOrder,
   searchAddress,
 } from "./api-client.js";
 import { PlatformType, RebateCondition } from "./api-types.js";
@@ -353,6 +354,32 @@ export class XiaocanWorkflowMcpServer {
           }));
 
           return jsonContent({ total: orders.length, orders: formatted });
+        } catch (e) { return errorContent(e); }
+      }
+    );
+
+    const xiaocanSubmitOrderSchema = z.object({
+      promotionOrderId: z.number().int().min(1, "promotionOrderId 必填（从抢单结果或订单列表获取）"),
+      reviewText: z.string().optional(),
+      imageUrls: z.array(z.string()).default([]),
+    });
+
+    this.server.tool(
+      "xiaocan-submit-order",
+      "提交订单返现。传入 promotionOrderId、好评文字和截图链接。注意：RPC 来自 APK 反编译的 ReviewPromotionOrder，需抓包验证参数",
+      xiaocanSubmitOrderSchema.shape,
+      async (params) => {
+        try {
+          const input = xiaocanSubmitOrderSchema.parse(params);
+          const result = await submitOrder({
+            promotionOrderId: input.promotionOrderId,
+            reviewText: input.reviewText,
+            imageUrls: input.imageUrls,
+          });
+
+          return result.success
+            ? jsonContent(result)
+            : errorContent(result.message);
         } catch (e) { return errorContent(e); }
       }
     );
