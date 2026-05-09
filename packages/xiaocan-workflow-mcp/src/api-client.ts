@@ -396,3 +396,30 @@ export async function searchAddress(
     return [];
   }
 }
+
+// 提交订单返现
+export async function submitOrder(params: {
+  promotionOrderId: number;
+  reviewText?: string;
+  imageUrls?: string[];
+}): Promise<{ success: boolean; message: string; rawResponse?: unknown }> {
+  try {
+    const data = await postRpc("Silkworm", "SilkwormService.ReviewPromotionOrder", {
+      promotion_order_id: params.promotionOrderId,
+      review_content: params.reviewText ?? "",
+      images: params.imageUrls ?? [],
+      silk_id: authConfig.silkId ?? 0,
+    });
+
+    return {
+      success: true,
+      message: "订单已提交，等待审核返现",
+      rawResponse: data,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: `提交失败: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
