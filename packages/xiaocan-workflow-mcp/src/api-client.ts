@@ -124,72 +124,98 @@ function formatTime(hour: number, minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-function parsePromotion(item: PromotionItem): StoreInfo[] {
+function parsePromotion(raw: Record<string, unknown>): StoreInfo[] {
   const results: StoreInfo[] = [];
-  const name = item.name ?? item.store?.name ?? "";
-  const storeId = item.store?.store_id ?? 0;
-  const openHours = item.store?.opening_hours ?? "";
-  const promotionId = item.id;
-  const rebateCondition = item.rebate_condition ?? 0;
-  const startHour = item.begin_hour ?? 0;
-  const startMin = item.begin_min ?? 0;
-  const endHour = item.end_hour ?? 0;
-  const endMin = item.end_min ?? 0;
-  const distance = item.distance ?? 0;
-  const icon = item.icon ?? item.store?.icon ?? "";
-  const address = item.store?.address ?? "";
-  const lat = item.store?.latitude;
-  const lng = item.store?.longitude;
 
-  const base = {
-    name,
-    storeId,
-    promotionId,
-    startTime: formatTime(startHour, startMin),
-    endTime: formatTime(endHour, endMin),
-    openHours,
-    rebateCondition,
-    distance,
-    icon,
-    address,
-    latitude: lat,
-    longitude: lng,
-  };
+  // Common fields (Fusion/Explore/old formats differ)
+  const store = raw.store as Record<string, unknown> | undefined;
+  const name = (raw.name ?? store?.name ?? "") as string;
+  const storeId = (raw.id ?? store?.store_id ?? store?.id ?? 0) as number;
+  const promotionId = (raw.id ?? raw.promotion_id ?? 0) as number;
+  const openHours = (raw.opening_hours ?? store?.opening_hours ?? "") as string;
+  const rebateCondition = (raw.rebate_condition ?? 0) as number;
+  const distance = (raw.distance ?? 0) as number;
+  const icon = (raw.icon ?? store?.icon ?? "") as string;
+  const address = (raw.address ?? store?.address ?? "") as string;
+  const lat = (raw.latitude ?? store?.latitude) as number | undefined;
+  const lng = (raw.longitude ?? store?.longitude) as number | undefined;
 
-  // 美团 (type 1)
-  const mt = item.meituan_status;
-  if (mt && mt.status !== 0) {
-    results.push({
-      ...base,
-      type: 1,
-      leftNumber: mt.stock ?? 0,
-      price: safeDivide(mt.price, 100),
-      rebatePrice: safeDivide(mt.rebate, 100),
-    });
+  // Time: can be int or string
+  function parseTime(rawH: unknown, rawM: unknown): string {
+    const h = typeof rawH === "string" ? parseInt(rawH, 10) : (rawH as number);
+    const m = rawM ? (typeof rawM === "string" ? parseInt(rawM, 10) : (rawM as number)) : 0;
+    if (h == null || isNaN(h)) return "00:00";
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
-  // 饿了么 (type 2)
-  const elm = item.eleme_status;
-  if (elm && elm.status !== 0) {
-    results.push({
-      ...base,
-      type: 2,
-      leftNumber: elm.stock ?? 0,
-      price: safeDivide(elm.price, 100),
-      rebatePrice: safeDivide(elm.rebate, 100),
-    });
-  }
+  const startTime = parseTime(
+    raw.start_time_hour ?? raw.begin_hour ?? 0,
+    raw.start_time_minute ?? raw.begin_min ?? 0
+  );
+  const endTime = parseTime(
+    raw.end_time_hour ?? 0,
+    raw.end_time_minute ?? 0
+  );
 
-  // 京东/第三方 (type 3)
-  const tp = item.tp_promotion;
-  if (tp && tp.tp_status !== 0 && tp.tp_status !== undefined) {
+  const base = { name, storeId, promotionId, startTime, endTime, openHours, rebateCondition, distance, icon, address, latitude: lat, longitude: lng };
+
+  // Detect format: new Explore (meituan_status is object), old (meituan_status is number), Fusion (order_money directly)
+  const mtStatus = raw.meituan_status;
+  const elmStatus = raw.eleme_status;
+
+  if (typeof mtStatus === "object" && mtStatus !== null) {
+    // New Explore format: meituan_status/eleme_status are objects
+    const mt = mtStatus as Record<string, unknown>;
+    if ((mt.status as number) !== 0) {
+      results.push({ ...base, type: 1, leftNumber: (mt.stock as number) ?? 0, price: safeDivide(mt.price as number, 100), rebatePrice: safeDivide(mt.rebate as number, 100) });
+    }
+    if (typeof elmStatus === "object" && elmStatus !== null) {
+      const elm = elmStatus as Record<string, unknown>;
+      if ((elm.status as number) !== 0) {
+        results.push({ ...base, type: 2, leftNumber: (elm.stock as number) ?? 0, price: safeDivide(elm.price as number, 100), rebatePrice: safeDivide(elm.rebate as number, 100) });
+      }
+    }
+  } else if (typeof raw.order_money === "number" || typeof raw.user_rebate === "number") {
+    // Fusion Search format: flat fields
+    const platform = (raw.store_platform as number) ?? 1;
     results.push({
       ...base,
-      type: 3,
-      leftNumber: tp.stock ?? 0,
-      price: safeDivide(tp.price, 100),
-      rebatePrice: safeDivide(tp.rebate, 100),
+      type: platform,
+      leftNumber: (raw.left_number as number) ?? 0,
+      price: safeDivide(raw.order_money as number, 100),
+      rebatePrice: safeDivide(raw.user_rebate as number, 100),
     });
+  } else {
+    // Old GetStorePromotionList format: mtStatus/elmStatus are numbers (0/1)
+    if (mtStatus === 1 || (mtStatus as number) > 0) {
+      results.push({
+        ...base,
+        type: 1,
+        leftNumber: (raw.meituan_left_number as number) ?? 0,
+        price: safeDivide(raw.meituan_order_money as number, 100),
+        rebatePrice: safeDivide(raw.meituan_user_rebate as number, 100),
+      });
+    }
+    if (elmStatus === 1 || (elmStatus as number) > 0) {
+      results.push({
+        ...base,
+        type: 2,
+        leftNumber: (raw.eleme_left_number as number) ?? 0,
+        price: safeDivide(raw.eleme_order_money as number, 100),
+        rebatePrice: safeDivide(raw.eleme_user_rebate as number, 100),
+      });
+    }
+    // Third party
+    const tp = raw.tp_promotion as Record<string, unknown> | undefined;
+    if (tp && tp.tp_status !== 0 && tp.tp_status !== undefined) {
+      results.push({
+        ...base,
+        type: 3,
+        leftNumber: (tp.stock as number) ?? 0,
+        price: safeDivide(tp.price as number, 100),
+        rebatePrice: safeDivide(tp.rebate as number, 100),
+      });
+    }
   }
 
   return results;

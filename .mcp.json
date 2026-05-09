@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "xiaocan": {
+      "type": "sse",
+      "url": "http://localhost:7788/mcp"
+    }
+  }
+}
