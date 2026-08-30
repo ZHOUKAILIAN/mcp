@@ -2,6 +2,7 @@
   "name": "weather-mcp",
   "version": "1.0.0",
   "description": "天气预报 Model Context Protocol 服务器",
+  "type": "module",
   "main": "src/index.ts",
   "bin": {
     "weather-mcp": "src/index.ts"
@@ -11,7 +12,9 @@
     "README.md"
   ],
   "scripts": {
-    "start": "tsx --watch src/index.ts",
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

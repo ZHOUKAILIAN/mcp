@@ -117,7 +117,7 @@ export class WeatherMcpServer {
     });
     // 启动HTTP服务器
     return new Promise<this>((resolve) => {
-      app.listen(port, () => {
+      app.listen(port, "127.0.0.1", () => {
         Logger.log(`HTTP服务器已启动，监听端口: ${port}`);
         Logger.log(`SSE端点: http://localhost:${port}/mcp`);
         Logger.log(`消息端点: http://localhost:${port}/mcp-messages`);

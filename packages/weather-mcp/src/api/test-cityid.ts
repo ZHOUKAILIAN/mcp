@@ -1,7 +1,11 @@
 import { WeatherClient } from "./weather.js";
 
 async function test() {
-  const appCode = "42d4d6ef385140b7b34779015fee189a"; // 替换为你的真实AppCode
+  const appCode = process.env.APPCODE?.trim();
+  if (!appCode) {
+    throw new Error("请先设置 APPCODE 环境变量");
+  }
+
   const weatherClient = new WeatherClient(appCode);
   const cityName = "杭州";
   try {

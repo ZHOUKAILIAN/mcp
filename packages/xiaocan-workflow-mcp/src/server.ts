@@ -145,7 +145,7 @@ export class XiaocanWorkflowMcpServer {
       );
     });
     return new Promise<this>((resolve) => {
-      app.listen(port, () => {
+      app.listen(port, "127.0.0.1", () => {
         Logger.log(`小蚕 MCP 已启动 :${port}`);
         resolve(this);
       });

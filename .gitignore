@@ -1,0 +1,14 @@
+node_modules
+dist
+data/
+.env
+*.log
+auth.json
+packages/*/auth.json
+
+# 本地环境、凭据和运行数据
+.env.*
+!.env.example
+packages/*/data/
+*.pem
+*.key
